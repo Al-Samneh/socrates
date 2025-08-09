@@ -1,20 +1,33 @@
-# Core ML/DL Libraries
-torch
-transformers
-datasets
-accelerate
+# ------------------------------------------------------------------
+# Requirements for the Socrates DPO Fine-tuning Project
+# Pinned versions for critical libraries to ensure reproducibility,
+# especially for bitsandbytes and the CUDA environment.
+#
+# To install, run:
+# pip install -r requirements.txt
+# ------------------------------------------------------------------
 
-# Parameter-Efficient Fine-Tuning (PEFT)
-peft
-bitsandbytes
-trl
+# Core ML/DL Framework and CUDA-related libraries
+# Pinning these is crucial for bitsandbytes compatibility.
+torch==2.8.0
 
-# Data Handling
-pandas
-scikit-learn
+# Hugging Face Ecosystem
+# Pinning these ensures the APIs and integration points remain stable.
+transformers==4.36.2
+datasets==4.0.0
+peft==0.7.1
+trl==0.7.4
+accelerate==0.25.0
+# The bitsandbytes line from your pip freeze indicates a local install.
+# If you have the .whl or source directory, you'll need that.
+# If you installed from a repo, use that method. If from pip, pin the version.
+# Assuming a standard pip install is desired for the next environment:
+bitsandbytes==0.41.3 # A common version that works with this stack. Adjust if you know your specific version.
 
-# Web Application
-fastapi
-uvicorn[standard]
-streamlit
-requests
+# Tokenizer library
+sentencepiece==0.2.0
+
+# General utilities
+# Less critical to pin, but we will for maximum reproducibility.
+requests==2.32.4
+tqdm==4.67.1

@@ -15,12 +15,11 @@ from transformers import (
 )
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from trl import SFTTrainer
-
-
+import re
 from huggingface_hub import login
 import getpass
 
-# Securely prompt the user to enter their Hugging Face token
+# Securely prompt the user to enter their Hugging Face token, for safety
 hf_token = getpass.getpass("Enter your Hugging Face token: ")
 
 # Login to Hugging Face using the provided token
@@ -32,8 +31,8 @@ print("Successfully logged in to Hugging Face!")
 
 
 # --- 2. Configuration ---
-BASE_MODEL_NAME = "mistralai/Mistral-7B-v0.1"
-SFT_ADAPTER_OUTPUT_DIR = "./socrates-sft-adapters"   # We will save the LoRA "adapters"
+BASE_MODEL_NAME = "mistralai/Mistral-7B-v0.1" # base model
+SFT_ADAPTER_OUTPUT_DIR = "./socrates-sft-adapters"   # We will save the LoRA "adapters" , this is where the model will be saved
 
 
 
@@ -50,11 +49,8 @@ print("\nStep 3: Loading and formatting dataset...")
 dataset = load_dataset("tylercross/platos_socrates_no_context", split='train')
 
 # Function to clean speaker names from text
-import re
-
 def clean_speaker_names(text):
     """Remove speaker names like 'SOCRATES:', 'MENO:', etc. from the beginning of text"""
-    # Remove patterns like "SPEAKER_NAME:" at the start of text
     cleaned = re.sub(r'^[A-Z]{2,}:\s*', '', text.strip())
     return cleaned
 
@@ -63,13 +59,13 @@ def format_prompt(example):
     # Clean both input and output of speaker names
     clean_input = clean_speaker_names(example['input'])
     clean_output = clean_speaker_names(example['output'])
-    text = f"<s>[INST] {clean_input} [/INST] {clean_output}"
+    text = f"<s>[INST] {clean_input} [/INST] {clean_output}</s>" # to let the model know the input and output/ format of LLaMa 2 and Mistral
     return {"text": text}
 
 def tokenize_function(examples):
     return tokenizer(examples["text"], truncation=True, padding=False, max_length=512)
 
-formatted_dataset = dataset.map(format_prompt, remove_columns=dataset.column_names)
+formatted_dataset = dataset.map(format_prompt, remove_columns=dataset.column_names) # Removes the columns names and combines the input and output
 print(f"Sample formatted entry:\n{formatted_dataset[0]['text']}")
 
 # --- 4. Model and Tokenizer Setup ---
@@ -95,10 +91,12 @@ model = prepare_model_for_kbit_training(model) # to let the model know the model
 lora_config = LoraConfig(
     lora_alpha=16,
     lora_dropout=0.1,
-    r=64,
+    r=64, 
     bias="none",
     task_type="CAUSAL_LM",
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"]
 )
+
 model = get_peft_model(model, lora_config)
 model.print_trainable_parameters()
 
@@ -108,7 +106,7 @@ training_args = TrainingArguments(
     output_dir="./socrates-training-checkpoints",
     per_device_train_batch_size=4,
     gradient_accumulation_steps=2,
-    optim="paged_adamw_32bit", # Memory-efficient optimizer
+    optim="paged_adamw_32bit", # Memory-efficient optimizer, since we are using 4-bit quantization
     num_train_epochs=3,
     save_steps=200,
     logging_steps=25,
