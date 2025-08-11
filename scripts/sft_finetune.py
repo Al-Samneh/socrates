@@ -18,6 +18,12 @@ from trl import SFTTrainer
 import re
 from huggingface_hub import login
 import getpass
+import os
+import json
+
+
+
+
 
 # Securely prompt the user to enter their Hugging Face token, for safety
 hf_token = getpass.getpass("Enter your Hugging Face token: ")
@@ -46,7 +52,65 @@ bnb_config = BitsAndBytesConfig(
 
 # --- 3. Data Loading and Formatting ---
 print("\nStep 3: Loading and formatting dataset...")
-dataset = load_dataset("tylercross/platos_socrates_no_context", split='train')
+
+def create_merged_dataset():
+    """Create merged dataset if it doesn't exist, then load it."""
+    merged_file = "data/complete_socratic_training_dataset.json"
+    
+    # Check if merged dataset already exists
+    if os.path.exists(merged_file):
+        print(f"Found existing merged dataset: {merged_file}")
+    else:
+        print("Creating merged dataset from all sources...")
+        
+        all_entries = []
+        
+        # 1. Load Hugging Face dataset
+        try:
+            hf_dataset = load_dataset("tylercross/platos_socrates_no_context", split='train')
+            hf_entries = [{"input": item["input"], "output": item["output"]} for item in hf_dataset]
+            all_entries.extend(hf_entries)
+            print(f"✅ Added {len(hf_entries)} entries from Hugging Face")
+        except Exception as e:
+            print(f"⚠️  Could not load HF dataset: {e}")
+        
+        # 2. Load local datasets
+        local_files = [
+            "data/socratic_dialogues_dataset.json",
+            "data/generated_dataset.json"
+        ]
+        
+        for file_path in local_files:
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    
+                    entries = data.get('dataset', [])
+                    cleaned = [{"input": e.get("input", ""), "output": e.get("output", "")} for e in entries]
+                    all_entries.extend(cleaned)
+                    print(f"✅ Added {len(cleaned)} entries from {os.path.basename(file_path)}")
+                except Exception as e:
+                    print(f"⚠️  Could not load {file_path}: {e}")
+        
+        # Save merged dataset
+        merged_data = {"dataset": all_entries}
+        os.makedirs("data", exist_ok=True)
+        with open(merged_file, 'w', encoding='utf-8') as f:
+            json.dump(merged_data, f, indent=4, ensure_ascii=False)
+        
+        print(f"✅ Created merged dataset with {len(all_entries)} total entries")
+    
+    # Load the merged dataset
+    with open(merged_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    return Dataset.from_list(data['dataset'])
+
+# Create/load merged dataset
+from datasets import Dataset
+dataset = create_merged_dataset()
+print(f"📊 Training with {len(dataset)} total entries from all sources")
 
 # Function to clean speaker names from text
 def clean_speaker_names(text):
@@ -63,7 +127,7 @@ def format_prompt(example):
     return {"text": text}
 
 def tokenize_function(examples):
-    return tokenizer(examples["text"], truncation=True, padding=False, max_length=512)
+    return tokenizer(examples["text"], truncation=True, padding=False, max_length=1024)
 
 formatted_dataset = dataset.map(format_prompt, remove_columns=dataset.column_names) # Removes the columns names and combines the input and output
 print(f"Sample formatted entry:\n{formatted_dataset[0]['text']}")
@@ -110,7 +174,7 @@ training_args = TrainingArguments(
     num_train_epochs=3,
     save_steps=200,
     logging_steps=25,
-    learning_rate=2e-5, # Lowered learning rate for stability
+    learning_rate=5e-5, # Lowered learning rate for stability
     weight_decay=0.001,
     bf16=True, # Use bfloat16 for H100
     max_grad_norm=0.3,
@@ -131,6 +195,8 @@ trainer = SFTTrainer(
     args=training_args,
     train_dataset=formatted_dataset,
     data_collator=data_collator,
+    dataset_text_field="text",  # Add this line
+    max_seq_length=1024,        # Add this line to fix the warning too
 )
 trainer.train()
 

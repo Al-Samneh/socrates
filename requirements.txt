@@ -1,33 +1,78 @@
 # ------------------------------------------------------------------
 # Requirements for the Socrates DPO Fine-tuning Project
-# Pinned versions for critical libraries to ensure reproducibility,
-# especially for bitsandbytes and the CUDA environment.
+# Updated with all dependencies and custom bitsandbytes installation
 #
-# To install, run:
-# pip install -r requirements.txt
+# INSTALLATION INSTRUCTIONS:
+# 1. First install standard packages:
+#    pip install -r requirements.txt
+# 
+# 2. Then install bitsandbytes from source (REQUIRED for H100/CUDA compatibility):
+#    git clone https://github.com/bitsandbytes-foundation/bitsandbytes.git
+#    cd bitsandbytes/
+#    cmake -DCOMPUTE_BACKEND=cuda -S .
+#    make
+#    pip install .
+#    cd ..
 # ------------------------------------------------------------------
 
 # Core ML/DL Framework and CUDA-related libraries
-# Pinning these is crucial for bitsandbytes compatibility.
-torch==2.8.0
+torch>=2.1.0,<2.3.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
 
 # Hugging Face Ecosystem
-# Pinning these ensures the APIs and integration points remain stable.
-transformers==4.36.2
-datasets==4.0.0
-peft==0.7.1
-trl==0.7.4
-accelerate==0.25.0
-# The bitsandbytes line from your pip freeze indicates a local install.
-# If you have the .whl or source directory, you'll need that.
-# If you installed from a repo, use that method. If from pip, pin the version.
-# Assuming a standard pip install is desired for the next environment:
-bitsandbytes==0.41.3 # A common version that works with this stack. Adjust if you know your specific version.
+transformers>=4.36.0,<5.0.0
+datasets>=2.15.0,<3.0.0
+peft>=0.7.0,<1.0.0
+trl>=0.7.0,<1.0.0
+accelerate>=0.24.0,<1.0.0
+huggingface-hub>=0.19.0
 
-# Tokenizer library
-sentencepiece==0.2.0
+# IMPORTANT: bitsandbytes MUST be installed from source (see instructions above)
+# bitsandbytes==0.41.3  # COMMENTED OUT - install from source instead
 
-# General utilities
-# Less critical to pin, but we will for maximum reproducibility.
-requests==2.32.4
-tqdm==4.67.1
+# OpenAI API (for potential data generation/evaluation)
+openai>=1.3.0
+
+# Tokenizer and NLP libraries
+sentencepiece>=0.1.99
+tokenizers>=0.15.0
+
+# Web Interface Dependencies (for web_app.py)
+streamlit>=1.28.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.5.0
+
+# HTTP and API utilities
+requests>=2.28.0
+aiohttp>=3.9.0
+
+# Progress tracking and utilities
+tqdm>=4.64.0
+rich>=13.0.0
+
+# Data processing and analysis
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Scientific computing (for potential data analysis)
+scipy>=1.11.0
+
+# Jupyter and development tools (useful for VAST AI)
+jupyter>=1.0.0
+ipython>=8.0.0
+notebook>=7.0.0
+
+# System and environment utilities
+psutil>=5.9.0
+GPUtil>=1.4.0
+
+# Logging and monitoring
+wandb>=0.16.0  # Optional: for experiment tracking
+tensorboard>=2.15.0  # Optional: for training visualization
+
+# Additional utilities for robust deployment
+packaging>=23.0
+filelock>=3.12.0
+fsspec>=2023.9.0
