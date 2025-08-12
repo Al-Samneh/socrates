@@ -1,78 +1,89 @@
 # ------------------------------------------------------------------
-# Requirements for the Socrates DPO Fine-tuning Project
-# Updated with all dependencies and custom bitsandbytes installation
+# Requirements for the Socrates AI Fine-tuning Project
+# Updated after extensive debugging across multiple environments (Kaggle, VAST AI, Local)
 #
 # INSTALLATION INSTRUCTIONS:
 # 1. First install standard packages:
 #    pip install -r requirements.txt
 # 
-# 2. Then install bitsandbytes from source (REQUIRED for H100/CUDA compatibility):
+# 2. Then install bitsandbytes from source (CRITICAL for H100/CUDA compatibility):
 #    git clone https://github.com/bitsandbytes-foundation/bitsandbytes.git
 #    cd bitsandbytes/
 #    cmake -DCOMPUTE_BACKEND=cuda -S .
 #    make
 #    pip install .
 #    cd ..
+#
+# VERSION NOTES:
+# - torch==2.8.0 DOES NOT EXIST - Fixed to compatible range
+# - SentencePiece added after ImportError with Mistral tokenizer
+# - OpenAI client library updated from deprecated openai.ChatCompletion
+# - Fixed "PyPreTokenizerTypeWrapper" errors with tokenizer versions
+# - Random import added after missing import errors in DPO script
 # ------------------------------------------------------------------
 
-# Core ML/DL Framework and CUDA-related libraries
-torch>=2.1.0,<2.3.0
-torchvision>=0.16.0
-torchaudio>=2.1.0
+# Core ML/DL Framework - Fixed torch version issues
+torch>=2.1.0,<2.3.0  # Fixed from non-existent torch==2.8.0
+torchvision>=0.16.0,<0.18.0
+torchaudio>=2.1.0,<2.3.0
 
-# Hugging Face Ecosystem
-transformers>=4.36.0,<5.0.0
-datasets>=2.15.0,<3.0.0
-peft>=0.7.0,<1.0.0
-trl>=0.7.0,<1.0.0
-accelerate>=0.24.0,<1.0.0
-huggingface-hub>=0.19.0
+# Hugging Face Ecosystem - Compatible version ranges tested across environments
+transformers>=4.35.0,<4.37.0  # Specific range to avoid tokenizer issues
+datasets>=2.14.0,<2.16.0  # Stable range for dataset processing
+peft>=0.6.0,<0.8.0  # Tested LoRA compatibility
+trl>=0.7.0,<0.8.0  # SFTTrainer and DPOTrainer compatibility
+accelerate>=0.23.0,<0.25.0  # Multi-GPU and memory optimization
+huggingface-hub>=0.17.0,<0.20.0
 
-# IMPORTANT: bitsandbytes MUST be installed from source (see instructions above)
-# bitsandbytes==0.41.3  # COMMENTED OUT - install from source instead
+# CRITICAL: bitsandbytes MUST be installed from source (see instructions above)
+# bitsandbytes==0.41.3  # COMMENTED OUT - H100 requires source installation
 
-# OpenAI API (for potential data generation/evaluation)
-openai>=1.3.0
+# OpenAI API - Fixed from deprecated API usage
+openai>=1.3.0,<2.0.0  # Modern client library, not legacy openai.ChatCompletion
 
-# Tokenizer and NLP libraries
-sentencepiece>=0.1.99
-tokenizers>=0.15.0
+# Tokenizer and NLP libraries - Added after SentencePiece ImportError
+sentencepiece>=0.1.99,<0.2.0  # REQUIRED for Mistral/Llama tokenizers
+tokenizers>=0.14.0,<0.16.0  # Compatible with transformers range
 
-# Web Interface Dependencies (for web_app.py)
-streamlit>=1.28.0
-fastapi>=0.104.0
-uvicorn>=0.24.0
-pydantic>=2.5.0
+# Web Interface Dependencies
+streamlit>=1.28.0,<1.32.0
+fastapi>=0.104.0,<0.110.0
+uvicorn[standard]>=0.24.0,<0.27.0
+pydantic>=2.4.0,<3.0.0
 
 # HTTP and API utilities
-requests>=2.28.0
-aiohttp>=3.9.0
+requests>=2.31.0,<3.0.0
+aiohttp>=3.8.0,<4.0.0
 
 # Progress tracking and utilities
-tqdm>=4.64.0
-rich>=13.0.0
+tqdm>=4.65.0,<5.0.0
+rich>=13.0.0,<14.0.0
 
 # Data processing and analysis
-numpy>=1.24.0
-pandas>=2.0.0
+numpy>=1.24.0,<2.0.0
+pandas>=1.5.0,<3.0.0
 
-# Scientific computing (for potential data analysis)
-scipy>=1.11.0
+# Scientific computing
+scipy>=1.10.0,<2.0.0
 
-# Jupyter and development tools (useful for VAST AI)
+# Jupyter and development tools (VAST AI compatibility)
 jupyter>=1.0.0
-ipython>=8.0.0
-notebook>=7.0.0
+ipython>=8.0.0,<9.0.0
+notebook>=7.0.0,<8.0.0
 
 # System and environment utilities
 psutil>=5.9.0
 GPUtil>=1.4.0
 
-# Logging and monitoring
-wandb>=0.16.0  # Optional: for experiment tracking
-tensorboard>=2.15.0  # Optional: for training visualization
+# Logging and monitoring (optional but recommended)
+wandb>=0.15.0  # Experiment tracking
+tensorboard>=2.14.0  # Training visualization
 
 # Additional utilities for robust deployment
 packaging>=23.0
 filelock>=3.12.0
-fsspec>=2023.9.0
+fsspec[http]>=2023.9.0
+
+# Development and debugging utilities
+colorama>=0.4.6  # Cross-platform colored terminal text
+python-dotenv>=1.0.0  # Environment variable management
